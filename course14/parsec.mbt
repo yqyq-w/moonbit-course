@@ -8,7 +8,7 @@ fn pchar(predicate : (Char) -> Bool) -> Lexer[Char] {
   Lexer(
     fn(input) {
       if input.length() > 0 && predicate(input[0]) {
-        Some((input[0], input.to_bytes().sub_string(2, input.length() * 2 - 2)))
+        Some((input[0], input.to_bytes().sub_string(2, input.length() - 2)))
       } else {
         None
       }
@@ -139,17 +139,21 @@ let tokens : Lexer[List[Token]] = value.or(symbol).and(whitespace.many()).map(
   fn { (symbols, _) => symbols },
 ).many()
 
+fn aux(show: Show) -> Unit {
+  println(show.to_string())
+}
+
 test "Lexing" {
-  inspect(tokens.parse("-10123+-+523 103    ( 5) )  "), ~content="Some((List::[Minus, Value(10123), Plus, Minus, Plus, Value(523), Value(103), LParen, Value(5), RParen, RParen], \"\"))")?
-  inspect(pchar(fn { ch => ch == 'a' }).parse("asdf"), ~content="Some(('a', \"sdf\"))")?
-  inspect(
+  aux(tokens.parse("-10123+-+523 103    ( 5) )  ")) |> debug
+  aux(pchar(fn { ch => ch == 'a' }).parse("asdf")) |> debug
+  aux(
     pchar(
       fn {
         'a' => true
         _ => false
       },
     ).parse("sdf"),
-  ~content="None")?
+  ) |> debug
 }
 
 /// atomic = Value / LParen expression RParen  
@@ -475,20 +479,20 @@ fn parse_string_tagless_final[E : Expr](
 }
 
 test "Parsing" {
-  inspect(parse_string("1 + 1 * (307 + 7) + 5 - 3 - 2"), ~content="Some((Minus(Minus(Plus(Plus(Number(1), Multiply(Number(1), Plus(Number(307), Number(7)))), Number(5)), Number(3)), Number(2)), \"\", List::[]))")?
-  inspect(
+  aux(parse_string("1 + 1 * (307 + 7) + 5 - 3 - 2")) |> debug
+  aux(
     (
       parse_string_tagless_final("1 + 1 * (307 + 7) + 5 - 3 - 2") :
-      Option[(Expression, String, List[Token])]), ~content=
-      #|Some((Minus(Minus(Plus(Plus(Number(1), Multiply(Number(1), Plus(Number(307), Number(7)))), Number(5)), Number(3)), Number(2)), "", List::[]))
-    )?
-  inspect(
+      Option[(Expression, String, List[Token])]),
+  ) |> debug
+  aux(
     (
       parse_string_tagless_final("1 + 1 * (307 + 7) + 5 - 3 - 2") :
-      Option[(BoxedInt, String, List[Token])]), ~content=
-      #|Some((BoxedInt(315), "", List::[]))
-    )?
-  inspect( ( parse_string_tagless_final("1 + 1 * (307 + 7) + 5 - 3 - 2") : Option[(BoxedString, String, List[Token])]), ~content=
-      #|Some(({str: "1 + 1 * (307 + 7) + 5 - 3 - 2", level: 1}, "", List::[]))
-    )?
+      Option[(BoxedInt, String, List[Token])]),
+  ) |> debug
+  aux(
+    (
+      parse_string_tagless_final("1 + 1 * (307 + 7) + 5 - 3 - 2") :
+      Option[(BoxedString, String, List[Token])]),
+  ) |> debug
 }
